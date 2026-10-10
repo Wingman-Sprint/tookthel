@@ -1,11 +1,25 @@
 import { motion } from 'motion/react'
 import { Coffee, ExternalLink } from 'lucide-react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import { DONATION_URL } from '../../domain/donation'
 import { Button } from '../../ui'
 import { Sheet } from '../../ui/Sheet'
 
-/** Ajakan donasi yang selalu bisa ditutup; ditutup dengan cara apa pun dianggap "nanti aja". */
-export default function DonationSheet({ open, onDismiss, onDonate }: { open: boolean; onDismiss: () => void; onDonate: () => void }) {
+/**
+ * Ajakan donasi yang selalu bisa ditutup. Dengan `autoCloseSeconds`, sheet menghitung mundur
+ * lalu memanggil `onDismiss` sendiri.
+ */
+export default function DonationSheet({
+  open,
+  onDismiss,
+  onDonate,
+  autoCloseSeconds,
+}: {
+  open: boolean
+  onDismiss: () => void
+  onDonate: () => void
+  autoCloseSeconds?: number
+}) {
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onDismiss()} title="Traktir kopi?">
       <div className="relative overflow-hidden rounded-[1.6rem] bg-butter p-5 text-charcoal">
@@ -37,7 +51,37 @@ export default function DonationSheet({ open, onDismiss, onDonate }: { open: boo
         <Button variant="ghost" onClick={onDismiss}>
           Nanti aja
         </Button>
+        {/* Dipasang ulang setiap kali sheet dibuka, jadi hitung mundurnya selalu mulai dari awal. */}
+        {open && autoCloseSeconds ? <Countdown seconds={autoCloseSeconds} onDone={onDismiss} /> : null}
       </div>
     </Sheet>
+  )
+}
+
+function Countdown({ seconds, onDone }: { seconds: number; onDone: () => void }) {
+  const [left, setLeft] = useState(seconds)
+  const done = useEffectEvent(onDone)
+  // Penutupnya satu timer sendiri, jadi tidak bergeser walau angka di layar telat diperbarui.
+  useEffect(() => {
+    const tick = setInterval(() => setLeft((l) => Math.max(0, l - 1)), 1000)
+    const end = setTimeout(() => done(), seconds * 1000)
+    return () => {
+      clearInterval(tick)
+      clearTimeout(end)
+    }
+  }, [seconds])
+
+  return (
+    <div className="mt-1">
+      <div className="h-1 overflow-hidden rounded-full bg-surface-2">
+        <motion.div
+          className="h-full rounded-full bg-lime"
+          initial={{ width: '100%' }}
+          animate={{ width: '0%' }}
+          transition={{ duration: seconds, ease: 'linear' }}
+        />
+      </div>
+      <p className="mt-2 text-center text-xs text-muted">Tertutup sendiri dalam {left} detik</p>
+    </div>
   )
 }

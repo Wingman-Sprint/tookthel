@@ -2,6 +2,7 @@ import { AnimatePresence, motion, MotionConfig, type Variants } from 'motion/rea
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { calculate, itemsSubtotal } from '../domain/calculate'
+import { PEEK_DELAY_MS, PEEK_SECONDS } from '../domain/donation'
 import { LAST_STEP, stepBlocker } from '../domain/steps'
 import { ChargesStep } from '../features/charges/ChargesStep'
 import { ItemsStep } from '../features/items/ItemsStep'
@@ -37,7 +38,15 @@ export default function App() {
   const [printMounted, setPrintMounted] = useState(false)
   const donation = useDonation()
   const [askDonation, setAskDonation] = useState(false)
+  // Ajakan bertimer tertutup sendiri dan tidak memicu jeda 30 hari milik ajakan setelah bagikan.
+  const [donationTimed, setDonationTimed] = useState(false)
   const [donationMounted, setDonationMounted] = useState(false)
+  const openDonation = (timed: boolean) => {
+    setDonationMounted(true)
+    setDonationTimed(timed)
+    setAskDonation(true)
+  }
+  const billKey = JSON.stringify([bill.people, bill.items, bill.charges])
 
   // Ajakan donasi muncul setelah struk selesai dibagikan, bukan saat pengguna masih menghitung.
   const onPrintOpenChange = (open: boolean) => {
@@ -45,9 +54,23 @@ export default function App() {
     // Tunggu animasi tutup halaman struk supaya dua sheet tidak bertumpuk.
     if (!open && donation.shouldAsk()) {
       setDonationMounted(true)
-      setTimeout(() => setAskDonation(true), 400)
+      setTimeout(() => openDonation(false), 400)
     }
   }
+
+  // Ajakan bertimer sekali per isi tagihan, beberapa detik setelah Hasil tampil. Batal kalau
+  // pengguna keburu pindah langkah atau membuka struk.
+  const peeked = useRef('')
+  useEffect(() => {
+    if (step !== LAST_STEP || printOpen || askDonation) return
+    if (billKey === peeked.current || !donation.shouldPeek()) return
+    const t = setTimeout(() => {
+      peeked.current = billKey
+      openDonation(true)
+    }, PEEK_DELAY_MS)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, printOpen, askDonation])
 
   // Maju hanya kalau syarat langkahnya terpenuhi; pesan kesalahan tampil sebagai toast.
   const tryGo = (to: number) => {
@@ -60,10 +83,9 @@ export default function App() {
   const celebrated = useRef('')
   useEffect(() => {
     if (step !== LAST_STEP) return
-    const key = JSON.stringify([bill.people, bill.items, bill.charges])
-    if (key === celebrated.current) return
-    celebrated.current = key
-    donation.countBill(key)
+    if (billKey === celebrated.current) return
+    celebrated.current = billKey
+    donation.countBill(billKey)
     void celebrate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
@@ -141,9 +163,10 @@ export default function App() {
         <Suspense fallback={null}>
           <DonationSheet
             open={askDonation}
+            autoCloseSeconds={donationTimed ? PEEK_SECONDS : undefined}
             onDismiss={() => {
               setAskDonation(false)
-              donation.dismiss()
+              if (!donationTimed) donation.dismiss()
             }}
             onDonate={() => {
               setAskDonation(false)
