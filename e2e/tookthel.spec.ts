@@ -378,3 +378,78 @@ test.describe('layar kecil (320 px)', () => {
     }
   })
 })
+
+const askDonation = (page: Page) => page.getByRole('dialog', { name: 'Traktir kopi?' })
+/** Buka lalu tutup halaman struk, momen ajakan donasi boleh muncul. */
+async function shareAndClose(page: Page) {
+  await page.locator('footer').getByRole('button', { name: 'Bagikan', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: 'Struk patungan' })
+  await expect(sheet).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(sheet).toBeHidden()
+}
+/** Anggap pengguna sudah menyelesaikan beberapa tagihan lain sebelumnya. */
+async function seedDonation(page: Page, completedBills: number) {
+  // Hanya diisi sekali, supaya status yang berubah selama tes tidak tertimpa saat reload.
+  await page.addInitScript(
+    (count) =>
+      localStorage.getItem('tookthel:donasi:v1') ??
+      localStorage.setItem('tookthel:donasi:v1', JSON.stringify({ completedBills: count, lastBillKey: '', dismissedAt: null, donated: false })),
+    completedBills,
+  )
+  await seed(page)
+  await openStep(page, 'Hasil')
+}
+
+test.describe('ajakan donasi', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+  })
+
+  test('belum muncul sebelum tagihan ke-3', async ({ page }) => {
+    await seedDonation(page, 1)
+    await shareAndClose(page)
+    await page.waitForTimeout(800)
+    await expect(askDonation(page)).toBeHidden()
+  })
+
+  test('muncul setelah struk ditutup, dan setelah "Nanti aja" tidak muncul lagi', async ({ page }) => {
+    await seedDonation(page, 2)
+    await shareAndClose(page)
+    await expect(askDonation(page)).toBeVisible()
+    await expect(askDonation(page).getByRole('link', { name: /Dukung di Sociabuzz/ })).toHaveAttribute('href', 'https://sociabuzz.com/byhund/tribe')
+
+    await askDonation(page).getByRole('button', { name: 'Nanti aja' }).click()
+    await expect(askDonation(page)).toBeHidden()
+    await shareAndClose(page)
+    await page.waitForTimeout(800)
+    await expect(askDonation(page)).toBeHidden()
+  })
+
+  test('setelah link donasi dibuka, ajakan tidak pernah muncul lagi', async ({ page, context }) => {
+    await context.route('https://sociabuzz.com/**', (route) => route.fulfill({ body: 'ok' }))
+    await seedDonation(page, 2)
+    await shareAndClose(page)
+
+    const tab = context.waitForEvent('page')
+    await askDonation(page).getByRole('link', { name: /Dukung di Sociabuzz/ }).click()
+    expect((await tab).url()).toBe('https://sociabuzz.com/byhund/tribe')
+    await expect(askDonation(page)).toBeHidden()
+
+    // Jeda 30 hari pun sudah lewat, tetap tidak ditanya lagi.
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('tookthel:donasi:v1')!)
+      localStorage.setItem('tookthel:donasi:v1', JSON.stringify({ ...s, dismissedAt: 0 }))
+    })
+    await page.reload()
+    await openStep(page, 'Hasil')
+    await shareAndClose(page)
+    await page.waitForTimeout(800)
+    await expect(askDonation(page)).toBeHidden()
+  })
+
+  test('link "Traktir kopi" selalu ada di bawah langkah Hasil', async ({ page }) => {
+    await seedDonation(page, 0)
+    await expect(page.locator('main').getByRole('link', { name: /Traktir kopi/ })).toHaveAttribute('href', 'https://sociabuzz.com/byhund/tribe')
+  })
+})

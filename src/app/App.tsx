@@ -9,6 +9,7 @@ import { PeopleStep } from '../features/people/PeopleStep'
 import { celebrate } from '../features/result/celebrate'
 import { ResultStep } from '../features/result/ResultStep'
 import { useBill } from '../state/useBill'
+import { useDonation } from '../state/useDonation'
 import { AppToaster } from '../ui'
 import { AppHeader } from './AppHeader'
 import { BottomBar } from './BottomBar'
@@ -17,6 +18,8 @@ import { useStepper } from './useStepper'
 
 // Halaman cetak struk (beserta kanvas dan sheet-nya) baru dimuat saat pertama kali membagikan.
 const PrintSheet = lazy(() => import('../features/result/PrintSheet'))
+// Ajakan donasi jarang muncul, jadi sheet-nya juga baru dimuat saat dibutuhkan.
+const DonationSheet = lazy(() => import('../features/result/DonationSheet'))
 
 // Langkah lama dan baru beranimasi bersamaan (popLayout), jadi konten baru langsung muncul.
 const stepVariants: Variants = {
@@ -32,6 +35,19 @@ export default function App() {
   const [printOpen, setPrintOpen] = useState(false)
   // Tetap terpasang setelah dibuka sekali supaya animasi tutup sheet sempat jalan.
   const [printMounted, setPrintMounted] = useState(false)
+  const donation = useDonation()
+  const [askDonation, setAskDonation] = useState(false)
+  const [donationMounted, setDonationMounted] = useState(false)
+
+  // Ajakan donasi muncul setelah struk selesai dibagikan, bukan saat pengguna masih menghitung.
+  const onPrintOpenChange = (open: boolean) => {
+    setPrintOpen(open)
+    // Tunggu animasi tutup halaman struk supaya dua sheet tidak bertumpuk.
+    if (!open && donation.shouldAsk()) {
+      setDonationMounted(true)
+      setTimeout(() => setAskDonation(true), 400)
+    }
+  }
 
   // Maju hanya kalau syarat langkahnya terpenuhi; pesan kesalahan tampil sebagai toast.
   const tryGo = (to: number) => {
@@ -47,6 +63,7 @@ export default function App() {
     const key = JSON.stringify([bill.people, bill.items, bill.charges])
     if (key === celebrated.current) return
     celebrated.current = key
+    donation.countBill(key)
     void celebrate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
@@ -96,7 +113,7 @@ export default function App() {
               {step === 0 && <PeopleStep bill={bill} dispatch={dispatch} />}
               {step === 1 && <ItemsStep bill={bill} result={result} dispatch={dispatch} />}
               {step === 2 && <ChargesStep bill={bill} result={result} dispatch={dispatch} />}
-              {step === 3 && <ResultStep bill={bill} result={result} dispatch={dispatch} />}
+              {step === 3 && <ResultStep bill={bill} result={result} dispatch={dispatch} onDonate={donation.donated} />}
             </motion.section>
           </AnimatePresence>
         </main>
@@ -116,7 +133,23 @@ export default function App() {
 
       {printMounted && (
         <Suspense fallback={null}>
-          <PrintSheet open={printOpen} onOpenChange={setPrintOpen} bill={bill} result={result} />
+          <PrintSheet open={printOpen} onOpenChange={onPrintOpenChange} bill={bill} result={result} />
+        </Suspense>
+      )}
+
+      {donationMounted && (
+        <Suspense fallback={null}>
+          <DonationSheet
+            open={askDonation}
+            onDismiss={() => {
+              setAskDonation(false)
+              donation.dismiss()
+            }}
+            onDonate={() => {
+              setAskDonation(false)
+              donation.donated()
+            }}
+          />
         </Suspense>
       )}
 
