@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyBill, type Bill } from '../domain/bill'
-import { loadBill, saveBill } from './storage'
+import { emptyDonation } from '../domain/donation'
+import { loadBill, loadDonation, saveBill, saveDonation } from './storage'
 
 function memoryStorage(initial: string | null = null) {
   let value = initial
@@ -86,5 +87,22 @@ describe('saveBill', () => {
 
   it('tidak melempar error kalau storage penuh', () => {
     expect(() => saveBill(emptyBill(), broken)).not.toThrow()
+  })
+})
+
+describe('loadDonation / saveDonation', () => {
+  it('menyimpan status ajakan donasi terpisah dari tagihan', () => {
+    const store = keyedStorage()
+    const state = { ...emptyDonation(), completedBills: 2, donated: true }
+    saveDonation(state, store)
+    expect([...store.data.keys()]).toEqual(['tookthel:donasi:v1'])
+    expect(loadDonation(store)).toEqual(state)
+  })
+
+  it('mengembalikan status kosong kalau belum ada, rusak, atau storage tidak bisa diakses', () => {
+    expect(loadDonation(keyedStorage())).toEqual(emptyDonation())
+    expect(loadDonation(memoryStorage('{bukan json'))).toEqual(emptyDonation())
+    expect(loadDonation(broken)).toEqual(emptyDonation())
+    expect(() => saveDonation(emptyDonation(), broken)).not.toThrow()
   })
 })

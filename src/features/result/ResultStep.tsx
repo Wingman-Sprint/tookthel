@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { ArrowRight, ChevronDown, Wallet } from 'lucide-react'
 import { useState, type Dispatch } from 'react'
 import { payerOf, type Bill } from '../../domain/bill'
+import { DONATION_URL } from '../../domain/donation'
 import type { BillResult } from '../../domain/calculate'
 import { rupiah } from '../../lib/format'
 import type { Action } from '../../state/billReducer'
@@ -16,7 +17,17 @@ const rise = {
   show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 300, damping: 26 } },
 }
 
-export function ResultStep({ bill, result, dispatch }: { bill: Bill; result: BillResult; dispatch: Dispatch<Action> }) {
+export function ResultStep({
+  bill,
+  result,
+  dispatch,
+  onDonate,
+}: {
+  bill: Bill
+  result: BillResult
+  dispatch: Dispatch<Action>
+  onDonate: () => void
+}) {
   const [expanded, setExpanded] = useState<string | null>(null)
   const payer = payerOf(bill)
   const owed = result.perPerson.filter((r) => r.personId !== bill.payerId).reduce((s, r) => s + r.total, 0)
@@ -163,6 +174,20 @@ export function ResultStep({ bill, result, dispatch }: { bill: Bill; result: Bil
           )
         })}
       </div>
+
+      {/* Jalur donasi tetap yang tidak mengganggu; ajakan lewat sheet hanya sesekali. */}
+      <motion.p variants={rise} className="mt-8 text-center text-xs text-muted">
+        Tookthel gratis tanpa iklan.{' '}
+        <a
+          href={DONATION_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onDonate}
+          className="font-semibold text-ink underline decoration-line underline-offset-4"
+        >
+          Traktir kopi ☕
+        </a>
+      </motion.p>
     </motion.div>
   )
 }
