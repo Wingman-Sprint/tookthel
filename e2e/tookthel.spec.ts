@@ -72,6 +72,11 @@ test.beforeEach(async ({ page, context }) => {
   await page.addInitScript(() => {
     Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
     Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true })
+    // Ajakan donasi bertimer bisa muncul di tengah skenario lain, jadi anggap sudah donasi.
+    // Skenario ajakan donasi menimpanya lewat seedDonation.
+    if (!localStorage.getItem('tookthel:donasi:v1')) {
+      localStorage.setItem('tookthel:donasi:v1', JSON.stringify({ completedBills: 0, lastBillKey: '', dismissedAt: null, donated: true }))
+    }
   })
 })
 
@@ -388,16 +393,15 @@ async function shareAndClose(page: Page) {
   await page.keyboard.press('Escape')
   await expect(sheet).toBeHidden()
 }
-/** Anggap pengguna sudah menyelesaikan beberapa tagihan lain sebelumnya. */
+/** Anggap pengguna sudah menyelesaikan beberapa tagihan lain sebelumnya dan belum pernah donasi. */
 async function seedDonation(page: Page, completedBills: number) {
-  // Hanya diisi sekali, supaya status yang berubah selama tes tidak tertimpa saat reload.
-  await page.addInitScript(
+  await seed(page)
+  await page.evaluate(
     (count) =>
-      localStorage.getItem('tookthel:donasi:v1') ??
       localStorage.setItem('tookthel:donasi:v1', JSON.stringify({ completedBills: count, lastBillKey: '', dismissedAt: null, donated: false })),
     completedBills,
   )
-  await seed(page)
+  await page.reload()
   await openStep(page, 'Hasil')
 }
 
@@ -451,5 +455,49 @@ test.describe('ajakan donasi', () => {
   test('link "Traktir kopi" selalu ada di bawah langkah Hasil', async ({ page }) => {
     await seedDonation(page, 0)
     await expect(page.locator('main').getByRole('link', { name: /Traktir kopi/ })).toHaveAttribute('href', 'https://sociabuzz.com/byhund/tribe')
+  })
+})
+
+test.describe('ajakan donasi bertimer', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.clock.install()
+  })
+
+  test('muncul 5 detik setelah Hasil tampil lalu tertutup sendiri setelah 10 detik', async ({ page }) => {
+    await seedDonation(page, 0)
+    await page.clock.runFor(4000)
+    await expect(askDonation(page)).toBeHidden()
+
+    await page.clock.runFor(1000)
+    await expect(askDonation(page)).toBeVisible()
+    await expect(askDonation(page).getByText('Tertutup sendiri dalam 10 detik')).toBeVisible()
+    await page.clock.runFor(3000)
+    await expect(askDonation(page).getByText('Tertutup sendiri dalam 7 detik')).toBeVisible()
+
+    await page.clock.runFor(7000)
+    // Beri waktu untuk animasi tutup sheet.
+    await page.clock.runFor(1000)
+    await expect(askDonation(page)).toBeHidden()
+    // Sekali per isi tagihan, jadi bolak-balik ke Hasil tidak memunculkannya lagi.
+    await openStep(page, 'Pajak')
+    await openStep(page, 'Hasil')
+    await page.clock.runFor(6000)
+    await expect(askDonation(page)).toBeHidden()
+  })
+
+  test('bisa ditutup sebelum waktunya habis', async ({ page }) => {
+    await seedDonation(page, 0)
+    await page.clock.runFor(5000)
+    await askDonation(page).getByRole('button', { name: 'Nanti aja' }).click()
+    await expect(askDonation(page)).toBeHidden()
+  })
+
+  test('batal kalau pengguna keburu pindah dari Hasil', async ({ page }) => {
+    await seedDonation(page, 0)
+    await page.clock.runFor(3000)
+    await openStep(page, 'Pajak')
+    await page.clock.runFor(5000)
+    await expect(askDonation(page)).toBeHidden()
   })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ASK_AFTER_BILLS, countBill, dismissDonation, emptyDonation, markDonated, shouldAskDonation, SNOOZE_MS } from './donation'
+import { ASK_AFTER_BILLS, countBill, dismissDonation, emptyDonation, markDonated, shouldAskDonation, shouldPeekDonation, SNOOZE_MS } from './donation'
 
 const NOW = 1_800_000_000_000
 const ready = { ...emptyDonation(), completedBills: ASK_AFTER_BILLS }
@@ -34,5 +34,17 @@ describe('shouldAskDonation', () => {
 
   it('tidak bertanya saat offline', () => {
     expect(shouldAskDonation(ready, NOW, false)).toBe(false)
+  })
+})
+
+describe('shouldPeekDonation', () => {
+  it('muncul sejak tagihan pertama dan tidak terpengaruh "Nanti aja"', () => {
+    expect(shouldPeekDonation(emptyDonation(), true)).toBe(true)
+    expect(shouldPeekDonation(dismissDonation(emptyDonation(), NOW), true)).toBe(true)
+  })
+
+  it('diam untuk yang sudah donasi atau sedang offline', () => {
+    expect(shouldPeekDonation(markDonated(emptyDonation()), true)).toBe(false)
+    expect(shouldPeekDonation(emptyDonation(), false)).toBe(false)
   })
 })
