@@ -15,3 +15,6 @@ playwright-report
 # Setting pribadi dan worktree agent
 .claude/settings.local.json
 .claude/worktrees/
+
+# Folder kerja Archify (diagram arsitektur)
+.archify/
