@@ -129,6 +129,8 @@ npm run dev
 
 Buka alamat yang muncul di terminal. Untuk mencoba dari HP di jaringan yang sama, jalankan `npm run dev -- --host`.
 
+`npm install` juga mengaktifkan hook git di `.githooks/` yang menolak commit dengan atribusi AI ([aturannya](AGENTS.md#1-tanpa-atribusi-ai)).
+
 | Perintah | Fungsi |
 | --- | --- |
 | `npm run dev` | Server development |
@@ -197,6 +199,7 @@ tookthel/
 │   ├── features/    # people, items, charges, result
 │   └── app/         # App, header, navigasi, bar bawah
 ├── e2e/             # skenario Playwright di viewport HP
+├── scripts/         # cek atribusi AI untuk hook dan CI
 ├── public/          # logo, favicon, ikon PWA
 ├── docs/screenshots/
 ├── AGENTS.md        # aturan kerja untuk manusia dan AI agent
@@ -214,6 +217,8 @@ npm test            # Vitest: domain, state, lib
 npm run test:e2e    # Playwright: alur lengkap, struk, layar 320 px
 ```
 
+Workflow `No AI attribution` juga menolak commit, judul PR, dan deskripsi PR yang memuat atribusi AI.
+
 Perilaku baru wajib disertai test: logika di unit test, alur pengguna di E2E. Tampilan dicek di lebar 320 px dan 390 px, mode terang dan gelap.
 
 ## Deploy
@@ -228,7 +233,7 @@ Alur kerja lengkapnya ada di [`AGENTS.md`](AGENTS.md). Ringkasnya:
 
 1. Sinkron dulu (`git switch main && git pull`), lalu ambil satu item dari [roadmap #8](https://github.com/bintangfabian/tookthel/issues/8).
 2. Buat branch `feat/…`, `fix/…`, atau `docs/…`, satu topik per PR.
-3. Commit memakai Conventional Commits dalam Bahasa Indonesia, dengan pasangan sebagai co-author dan tanpa atribusi AI.
+3. Commit memakai Conventional Commits dalam Bahasa Indonesia, dengan pasangan sebagai co-author dan tanpa atribusi AI (dicek hook dan CI).
 4. Deskripsi PR memakai bagian Apa yang berubah, Kenapa, Sudah dicek, dan Selanjutnya.
 5. Setelah CI hijau, merge dengan **merge commit** (`gh pr merge --merge`).
 
