@@ -109,7 +109,8 @@ src/
   features/  satu folder per langkah: people, items, charges, result
   app/       komposisi: App, header, navigasi langkah, bar bawah
 e2e/         skenario Playwright
-scripts/     cek atribusi AI beserta test-nya
+scripts/     cek atribusi AI beserta test-nya, gambar promo README
+docs/        diagram arsitektur interaktif dan gambar README (disajikan GitHub Pages)
 .githooks/   hook commit-msg dan pre-push
 ```
 
@@ -137,6 +138,15 @@ Karakter tampilan Tookthel dipertahankan: kartu bento warna-warni, ilustrasi ber
 - Cek tampilan di lebar 320 px dan 390 px, mode terang dan gelap.
 - Ilustrasi ada di `src/ui/Illustrations.tsx`. Ekspresi wajah struk dipilih oleh `billMood` di `src/domain/mood.ts`.
 - Logo ada di `src/ui/Logo.tsx` dan dipakai di header serta kepala struk. Bentuknya sama dengan `public/logo.svg`, sumber favicon dan ikon PWA (`npm run icons`). Kalau logonya berubah, ubah keduanya.
+
+### Gambar README
+
+- **Gambar promo** (`docs/gambar/promo-*.webp`, 1320 × 2868 seperti screenshot App Store) memakai layar produksi asli di dalam bingkai iPhone yang digambar sendiri, di atas kartu bento. Buat ulang dengan `node scripts/promo-readme.mjs` setiap kali langkah Pesanan, Pajak, Hasil, atau struk berubah. Butuh Google Chrome. Layarnya diambil dari `PROMO_BASE_URL` (bawaan produksi), dan data contohnya hanya masuk localStorage browser sementara. Judul, sub, dan hiasannya ada di daftar `promos` di skrip itu.
+- **Diagram arsitektur** dibuat dengan [Archify](https://github.com/tt-a1i/archify) dari `docs/arsitektur.archify.json`. Versi interaktifnya (`docs/arsitektur.html`) disajikan GitHub Pages dari folder `docs/` (ada `docs/.nojekyll`), dan tiap bagian menaut ke baris kode di commit `meta.repository.revision`. Setelah arsitektur berubah:
+  1. Perbarui JSON-nya, termasuk revisi dan nomor baris rujukan.
+  2. Clone Archify di luar repo, lalu jalankan `node <archify>/bin/archify.mjs finalize architecture docs/arsitektur.archify.json .archify/arsitektur.html --repo-root . --quality showcase` (folder `.archify/` di-ignore).
+  3. Salin `.archify/arsitektur.html` ke `docs/arsitektur.html`.
+  4. Ekspor PNG terang dan gelap lewat tombol Ekspor, lalu simpan sebagai WebP 2400 px: `cwebp -q 95 -resize 2400 0 <png> -o docs/gambar/arsitektur-terang.webp`, begitu juga `arsitektur-gelap.webp`.
 
 ## 8. Keamanan
 
