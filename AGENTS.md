@@ -137,7 +137,22 @@ Karakter tampilan Tookthel dipertahankan: kartu bento warna-warni, ilustrasi ber
 - Mengganti elemen identitas (warna, logo, ilustrasi, font, gaya kartu) harus ditanyakan ke pasangan dulu, dengan screenshot sebelum dan sesudah.
 - Cek tampilan di lebar 320 px dan 390 px, mode terang dan gelap.
 - Ilustrasi ada di `src/ui/Illustrations.tsx`. Ekspresi wajah struk dipilih oleh `billMood` di `src/domain/mood.ts`.
-- Logo ada di `src/ui/Logo.tsx` dan dipakai di header serta kepala struk. Bentuknya sama dengan `public/logo.svg`, sumber favicon dan ikon PWA (`npm run icons`). Kalau logonya berubah, ubah keduanya.
+- Logo ada di `src/ui/Logo.tsx` (konstanta `LOGO`) dan dipakai di header serta kepala struk. Bentuk yang sama juga ada di `public/logo.svg` (sumber favicon dan ikon PWA, `npm run icons`) dan di splash `index.html`. Kalau logonya berubah, ubah ketiganya. `src/ui/Logo.test.ts` gagal kalau ada yang tertinggal.
+
+### Splash
+
+Di awal setiap sesi, sebelum langkah pertama tampil, logo Tookthel tercetak di layar:
+
+1. kotak gelap muncul dan celah printer terbuka;
+2. struk lime keluar dari celahnya dalam beberapa hentakan;
+3. mata muncul, senyum digambar, lalu berkedip sekali;
+4. "Tookthel" dan tagline *rugi jangan* naik, lalu confetti kecil pecah;
+5. splash memudar ke aplikasi. Totalnya 2,8 detik.
+
+- **Sekali per sesi.** `public/splash.js` di `<head>` memutuskan sebelum halaman tergambar, jadi tidak ada kedip. Berkasnya terpisah karena CSP menolak skrip inline.
+- **Tanpa JavaScript.** Markupnya di `index.html` dan animasinya CSS (`src/splash.css`), jadi sudah berjalan sebelum aplikasi selesai dimuat. `src/app/splash.ts` hanya melepasnya dari halaman.
+- **Tidak muncul** kalau pengguna meminta gerakan dikurangi, dan di tes otomatis (`navigator.webdriver`). `e2e/splash.spec.ts` menimpa nilai itu untuk menguji splash.
+- **Bisa dilewati** dengan ketukan atau tombol apa pun. Ketukannya tidak ikut menekan isian di bawahnya.
 
 ### Gambar README
 
