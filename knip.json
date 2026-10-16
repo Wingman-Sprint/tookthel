@@ -1,4 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["scripts/promo-readme.mjs"]
+  "entry": [
+    "scripts/promo-readme.mjs",
+    "src/splash.css"
+  ]
 }
