@@ -87,6 +87,7 @@ Setiap mulai sesi, termasuk sesi AI agent:
 | `npm run dev` | Server development |
 | `npm run typecheck` | Cek tipe TypeScript |
 | `npm run lint` | Lint (oxlint): aturan React hooks, aksesibilitas, TypeScript. Warning juga dianggap gagal |
+| `npm run knip` | Cari berkas, export, dan dependensi yang tidak terpakai. Harus bersih |
 | `npm test` | Unit test (Vitest) |
 | `npm run test:e2e` | E2E di browser (Playwright, build production dulu otomatis) |
 | `npm run build` | Build production + PWA |
@@ -95,7 +96,7 @@ Setiap mulai sesi, termasuk sesi AI agent:
 
 Pertama kali menjalankan E2E di mesin baru: `npx playwright install --only-shell chromium`.
 
-Sebelum push, pastikan `npm run lint`, `npm test`, dan `npm run test:e2e` lolos. Perilaku baru wajib disertai test: logika di unit test, alur pengguna di E2E. CI di GitHub Actions menjalankan semuanya di setiap PR (workflow `CI` dan `No AI attribution`).
+Sebelum push, pastikan `npm run lint`, `npm run knip`, `npm test`, dan `npm run test:e2e` lolos. Perilaku baru wajib disertai test: logika di unit test, alur pengguna di E2E. CI di GitHub Actions menjalankan semuanya di setiap PR (workflow `CI` dan `No AI attribution`).
 
 ## 6. Arsitektur
 
@@ -125,6 +126,7 @@ scripts/     cek atribusi AI beserta test-nya
 - `ui` tidak tahu apa-apa soal tagihan. Kalau komponen butuh data tagihan, tempatnya di `features`.
 - Logika baru (hitungan, validasi, format) masuk ke `domain` atau `lib` beserta unit test-nya. Komponen cukup menampilkan data dan memanggil `dispatch`.
 - Test ditaruh di sebelah filenya: `calculate.ts` → `calculate.test.ts`.
+- Data dari localStorage selalu lewat `restoreBill()` dan `restoreDonation()` di `domain`. Field baru di `Bill` wajib ditambahkan di sana beserta nilai bawaannya, supaya data lama dan data rusak tetap terbaca.
 
 ## 7. Desain
 
@@ -135,3 +137,10 @@ Karakter tampilan Tookthel dipertahankan: kartu bento warna-warni, ilustrasi ber
 - Cek tampilan di lebar 320 px dan 390 px, mode terang dan gelap.
 - Ilustrasi ada di `src/ui/Illustrations.tsx`. Ekspresi wajah struk dipilih oleh `billMood` di `src/domain/mood.ts`.
 - Logo ada di `src/ui/Logo.tsx` dan dipakai di header serta kepala struk. Bentuknya sama dengan `public/logo.svg`, sumber favicon dan ikon PWA (`npm run icons`). Kalau logonya berubah, ubah keduanya.
+
+## 8. Keamanan
+
+- Tidak ada server, akun, atau rahasia. Tagihan, termasuk rekening si tumbal, hanya tersimpan di localStorage perangkat. `.env` diabaikan `.gitignore`, jadi jangan menambah rahasia ke frontend.
+- Header keamanan (CSP, anti-iframe, nosniff, Referrer-Policy, Permissions-Policy) ada di `vercel.json`. `vite preview` memakai header yang sama, jadi E2E di describe "keamanan" langsung gagal kalau ada pelanggaran CSP atau request ke situs lain.
+- Menambah sumber dari luar (font, gambar, script, API) berarti mengubah CSP di `vercel.json` dan menjelaskan alasannya di PR. Font disajikan sendiri lewat `@fontsource`, jangan kembali ke Google Fonts.
+- Link keluar memakai `target="_blank"` dengan `rel="noopener noreferrer"`. Jangan memakai `dangerouslySetInnerHTML` untuk isian pengguna.

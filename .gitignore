@@ -7,3 +7,11 @@ dev-dist
 *.tsbuildinfo
 test-results
 playwright-report
+
+# Env dan rahasia: aplikasi ini tidak butuh, jadi jangan sampai ada yang ter-commit
+.env
+.env.*
+
+# Setting pribadi dan worktree agent
+.claude/settings.local.json
+.claude/worktrees/

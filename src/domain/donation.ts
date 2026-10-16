@@ -19,6 +19,18 @@ export type DonationState = {
 
 export const emptyDonation = (): DonationState => ({ completedBills: 0, lastBillKey: '', dismissedAt: null, donated: false })
 
+/** Status dari localStorage; nilai yang tipenya salah diganti nilai bawaan. */
+export function restoreDonation(saved: unknown): DonationState {
+  const s = typeof saved === 'object' && saved !== null ? (saved as Partial<Record<keyof DonationState, unknown>>) : {}
+  const count = s.completedBills
+  return {
+    completedBills: typeof count === 'number' && Number.isInteger(count) && count >= 0 ? count : 0,
+    lastBillKey: typeof s.lastBillKey === 'string' ? s.lastBillKey : '',
+    dismissedAt: typeof s.dismissedAt === 'number' && Number.isFinite(s.dismissedAt) ? s.dismissedAt : null,
+    donated: s.donated === true,
+  }
+}
+
 export function countBill(s: DonationState, billKey: string): DonationState {
   if (billKey === s.lastBillKey) return s
   return { ...s, completedBills: s.completedBills + 1, lastBillKey: billKey }

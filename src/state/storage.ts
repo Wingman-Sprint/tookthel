@@ -1,5 +1,5 @@
-import { emptyBill, type Bill } from '../domain/bill'
-import { emptyDonation, type DonationState } from '../domain/donation'
+import { emptyBill, restoreBill, type Bill } from '../domain/bill'
+import { emptyDonation, restoreDonation, type DonationState } from '../domain/donation'
 
 const KEY = 'tookthel:v1'
 // Key sebelum ganti nama dari SplitBill; tetap dibaca supaya tagihan pengguna lama tidak hilang.
@@ -12,12 +12,7 @@ type Store = Pick<Storage, 'getItem' | 'setItem'>
 export function loadBill(storage: Store = globalThis.localStorage): Bill {
   try {
     const raw = storage.getItem(KEY) ?? storage.getItem(LEGACY_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw)
-      const empty = emptyBill()
-      // Data lama bisa belum punya semua field charges, jadi isi kekurangannya dengan nilai bawaan.
-      return { ...empty, ...saved, charges: { ...empty.charges, ...saved.charges } }
-    }
+    if (raw) return restoreBill(JSON.parse(raw))
   } catch {
     /* storage tidak tersedia atau isinya rusak */
   }
@@ -35,7 +30,7 @@ export function saveBill(bill: Bill, storage: Store = globalThis.localStorage) {
 export function loadDonation(storage: Store = globalThis.localStorage): DonationState {
   try {
     const raw = storage.getItem(DONATION_KEY)
-    if (raw) return { ...emptyDonation(), ...JSON.parse(raw) }
+    if (raw) return restoreDonation(JSON.parse(raw))
   } catch {
     /* storage tidak tersedia atau isinya rusak */
   }

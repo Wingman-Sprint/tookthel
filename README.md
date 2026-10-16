@@ -59,7 +59,7 @@ Tookthel bikin si tumbal tetap balik modal. Masukkan siapa yang ikut dan apa yan
 - **Rekening si tumbal ikut terkirim**, jadi teman bisa langsung transfer tanpa bertanya.
 - **Bisa diurungkan.** Orang, pesanan, dan tagihan yang terhapus bisa dikembalikan dari notifikasi.
 - **PWA.** Bisa dipasang di layar utama HP, tetap jalan tanpa internet setelah dibuka sekali, dan mengikuti mode gelap HP.
-- **Privat.** Tanpa akun dan tanpa server. Tagihan disimpan di `localStorage` perangkat.
+- **Privat.** Tanpa akun, tanpa server, dan tanpa request ke pihak ketiga. Tagihan disimpan di `localStorage` perangkat.
 
 ### Alur pakai
 
@@ -138,6 +138,7 @@ Buka alamat yang muncul di terminal. Untuk mencoba dari HP di jaringan yang sama
 | `npm run preview` | Menyajikan hasil build secara lokal |
 | `npm run typecheck` | Cek tipe TypeScript |
 | `npm run lint` | Lint (oxlint), warning dianggap gagal |
+| `npm run knip` | Cari berkas, export, dan dependensi yang tidak terpakai |
 | `npm test` | Unit test (Vitest) |
 | `npm run test:e2e` | E2E di browser HP (Playwright), build production dulu otomatis |
 | `npm run icons` | Buat ulang favicon dan ikon PWA dari `public/logo.svg` |
@@ -203,7 +204,7 @@ tookthel/
 ├── public/          # logo, favicon, ikon PWA
 ├── docs/screenshots/
 ├── AGENTS.md        # aturan kerja untuk manusia dan AI agent
-└── vercel.json      # rewrite SPA + service worker tanpa cache
+└── vercel.json      # rewrite SPA, service worker tanpa cache, header keamanan
 ```
 
 ## Gerbang mutu
@@ -213,8 +214,9 @@ CI di GitHub Actions menjalankan semuanya di setiap PR dan setiap push ke `main`
 ```bash
 npm run typecheck   # tsc
 npm run lint        # oxlint: React hooks, aksesibilitas, TypeScript
+npm run knip        # tidak ada berkas, export, atau dependensi yang menganggur
 npm test            # Vitest: domain, state, lib
-npm run test:e2e    # Playwright: alur lengkap, struk, layar 320 px
+npm run test:e2e    # Playwright: alur lengkap, struk, layar 320 px, header keamanan dan CSP
 ```
 
 Workflow `No AI attribution` juga menolak commit, judul PR, dan deskripsi PR yang memuat atribusi AI.
@@ -223,7 +225,7 @@ Perilaku baru wajib disertai test: logika di unit test, alur pengguna di E2E. Ta
 
 ## Deploy
 
-Produksi ada di [Vercel](https://tookthel.vercel.app) dan terdeteksi sebagai proyek Vite (build `npm run build`, output `dist`). [`vercel.json`](vercel.json) mengarahkan semua rute ke `index.html` dan menyajikan `sw.js` tanpa cache, jadi versi baru langsung terpasang di HP pengguna.
+Produksi ada di [Vercel](https://tookthel.vercel.app) dan terdeteksi sebagai proyek Vite (build `npm run build`, output `dist`). [`vercel.json`](vercel.json) mengarahkan semua rute ke `index.html`, menyajikan `sw.js` tanpa cache supaya versi baru langsung terpasang di HP pengguna, dan mengirim header keamanan (CSP, anti-iframe, nosniff, Referrer-Policy, Permissions-Policy) untuk semua berkas.
 
 Kalau logo berubah, ubah `public/logo.svg` dan `src/ui` bersamaan, lalu jalankan `npm run icons` untuk membuat ulang favicon dan ikon PWA.
 

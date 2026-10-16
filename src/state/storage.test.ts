@@ -39,7 +39,7 @@ describe('loadBill', () => {
   })
 
   it('membaca tagihan yang tersimpan', () => {
-    const saved: Bill = { ...emptyBill(), title: 'Makan malam', payerId: 'a' }
+    const saved: Bill = { ...emptyBill(), title: 'Makan malam', people: [{ id: 'a', name: 'Budi', color: '#FFB4A2' }], payerId: 'a' }
     expect(loadBill(memoryStorage(JSON.stringify(saved)))).toEqual(saved)
   })
 
@@ -67,6 +67,8 @@ describe('loadBill', () => {
 
   it('mengembalikan tagihan kosong kalau data rusak atau storage tidak bisa diakses', () => {
     expect(loadBill(memoryStorage('{bukan json'))).toEqual(emptyBill())
+    expect(loadBill(memoryStorage('null'))).toEqual(emptyBill())
+    expect(loadBill(memoryStorage('{"people":"bukan daftar","items":null}'))).toEqual(emptyBill())
     expect(loadBill(broken)).toEqual(emptyBill())
   })
 })

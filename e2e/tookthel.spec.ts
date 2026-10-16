@@ -501,3 +501,36 @@ test.describe('ajakan donasi bertimer', () => {
     await expect(askDonation(page)).toBeHidden()
   })
 })
+
+test.describe('keamanan', () => {
+  test('halaman, aset, dan service worker membawa header keamanan', async ({ request }) => {
+    for (const path of ['/', '/sw.js', '/manifest.webmanifest', '/logo.svg']) {
+      const headers = (await request.get(path)).headers()
+      expect(headers['content-security-policy'], path).toContain("frame-ancestors 'none'")
+      expect(headers['x-frame-options'], path).toBe('DENY')
+      expect(headers['x-content-type-options'], path).toBe('nosniff')
+    }
+  })
+
+  test('struk dicetak dan dibagikan tanpa pelanggaran CSP dan tanpa request ke situs lain', async ({ page, baseURL }) => {
+    const outside: string[] = []
+    page.on('request', (r) => {
+      if (!/^(data|blob):/.test(r.url()) && !r.url().startsWith(baseURL!)) outside.push(r.url())
+    })
+    await page.addInitScript(() => {
+      const w = window as unknown as { csp: string[] }
+      w.csp = []
+      document.addEventListener('securitypolicyviolation', (e) => w.csp.push(`${e.effectiveDirective} ${e.blockedURI}`))
+    })
+    await seed(page)
+    await openStep(page, 'Hasil')
+    const sheet = await printReceipt(page)
+    const download = page.waitForEvent('download')
+    await sheet.getByRole('button', { name: 'Bagikan struk' }).click()
+    await download
+    await expect(page.getByText('Gambar struk tersimpan')).toBeVisible()
+
+    expect(await page.evaluate(() => (window as unknown as { csp: string[] }).csp)).toEqual([])
+    expect(outside).toEqual([])
+  })
+})

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ASK_AFTER_BILLS, countBill, dismissDonation, emptyDonation, markDonated, shouldAskDonation, shouldPeekDonation, SNOOZE_MS } from './donation'
+import { ASK_AFTER_BILLS, countBill, dismissDonation, emptyDonation, markDonated, restoreDonation, shouldAskDonation, shouldPeekDonation, SNOOZE_MS } from './donation'
 
 const NOW = 1_800_000_000_000
 const ready = { ...emptyDonation(), completedBills: ASK_AFTER_BILLS }
@@ -46,5 +46,17 @@ describe('shouldPeekDonation', () => {
   it('diam untuk yang sudah donasi atau sedang offline', () => {
     expect(shouldPeekDonation(markDonated(emptyDonation()), true)).toBe(false)
     expect(shouldPeekDonation(emptyDonation(), false)).toBe(false)
+  })
+})
+
+describe('restoreDonation', () => {
+  it('status yang utuh kembali persis sama', () => {
+    const s = { completedBills: 4, lastBillKey: 'abc', dismissedAt: NOW, donated: true }
+    expect(restoreDonation(JSON.parse(JSON.stringify(s)))).toEqual(s)
+  })
+
+  it('nilai yang tipenya salah diganti nilai bawaan', () => {
+    expect(restoreDonation(null)).toEqual(emptyDonation())
+    expect(restoreDonation({ completedBills: -2, lastBillKey: 9, dismissedAt: 'kemarin', donated: 'ya' })).toEqual(emptyDonation())
   })
 })
