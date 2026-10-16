@@ -22,8 +22,8 @@ export type Receipt = {
 export function chargeLines(c: Charges, result: BillResult): ChargeLine[] {
   const lines: (ChargeLine | false)[] = [
     result.discount > 0 && { label: c.discountType === 'pct' ? `Diskon ${c.discount}%` : 'Diskon', amount: -result.discount },
-    result.service > 0 && { label: `Service ${c.servicePct}%`, amount: result.service },
-    result.tax > 0 && { label: `Pajak ${c.taxPct}%`, amount: result.tax },
+    result.service > 0 && { label: c.serviceType === 'pct' ? `Service ${c.servicePct}%` : 'Service', amount: result.service },
+    result.tax > 0 && { label: c.taxType === 'pct' ? `Pajak ${c.taxPct}%` : 'Pajak', amount: result.tax },
     result.extra > 0 && { label: 'Biaya lain', amount: result.extra },
   ]
   return lines.filter((l) => l !== false)

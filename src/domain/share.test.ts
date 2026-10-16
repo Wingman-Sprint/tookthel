@@ -61,6 +61,15 @@ describe('buildShareText', () => {
     expect(share(bill())).not.toContain('Dibulatkan')
   })
 
+  it('menulis service dan pajak nominal dalam rupiah', () => {
+    const c = emptyBill().charges
+    expect(share(bill({ charges: { ...c, serviceType: 'amount', serviceAmount: 2000 } }))).toContain(
+      'Sudah termasuk service Rp 2.000 dan pajak 10%.',
+    )
+    expect(share(bill({ charges: { ...c, taxType: 'amount', taxAmount: 2500 } }))).toContain('Sudah termasuk service 5% dan pajak Rp 2.500.')
+    expect(share(bill({ charges: { ...c, serviceType: 'amount', taxType: 'amount' } }))).not.toContain('Sudah')
+  })
+
   it('tidak menulis kalimat biaya kalau tanpa service, pajak, diskon, dan biaya lain', () => {
     const text = share(bill({ charges: { ...emptyBill().charges, servicePct: 0, taxPct: 0 } }))
     expect(text).not.toContain('Sudah')

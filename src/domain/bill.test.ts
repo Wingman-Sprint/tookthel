@@ -25,7 +25,19 @@ describe('restoreBill', () => {
       { id: 'b', name: 'Ani', color: '#B8E0D2' },
     ],
     items: [{ id: 'x', name: 'Iga Bakar', price: 98000, qty: 2, sharedBy: ['a', 'b'] }],
-    charges: { servicePct: 5, taxPct: 11, taxAfterService: false, discount: 10, discountType: 'pct', extraFee: 8000, roundTo: 500 },
+    charges: {
+      serviceType: 'amount',
+      servicePct: 5,
+      serviceAmount: 12000,
+      taxType: 'pct',
+      taxPct: 11,
+      taxAmount: 0,
+      taxAfterService: false,
+      discount: 10,
+      discountType: 'pct',
+      extraFee: 8000,
+      roundTo: 500,
+    },
     payerId: 'b',
     paymentInfo: 'BCA 123',
   }
@@ -41,7 +53,9 @@ describe('restoreBill', () => {
   it('melengkapi field yang belum ada di data versi lama', () => {
     const old = { title: 'Lama', people: bill.people, items: [{ id: 'x', name: 'Kopi', price: 20000 }], charges: { servicePct: 0 }, payerId: 'a' }
     const restored = restoreBill(old)
+    // Tagihan dari sebelum ada service/pajak nominal tetap memakai persen.
     expect(restored.charges).toEqual({ ...emptyBill().charges, servicePct: 0 })
+    expect(restored.charges).toMatchObject({ serviceType: 'pct', serviceAmount: 0, taxType: 'pct', taxAmount: 0 })
     expect(restored.items[0]).toEqual({ id: 'x', name: 'Kopi', price: 20000, qty: 1, sharedBy: [] })
     expect(restored.paymentInfo).toBe('')
   })
@@ -61,7 +75,19 @@ describe('restoreBill', () => {
     const restored = restoreBill({
       ...bill,
       items: [{ id: 'x', name: 'Iga', price: -5000, qty: 1.5, sharedBy: ['a'] }],
-      charges: { servicePct: 'lima', taxPct: -1, taxAfterService: 'ya', discount: null, discountType: 'gratis', extraFee: Infinity, roundTo: 250 },
+      charges: {
+        serviceType: 'rupiah',
+        servicePct: 'lima',
+        serviceAmount: -2000,
+        taxType: 1,
+        taxPct: -1,
+        taxAmount: NaN,
+        taxAfterService: 'ya',
+        discount: null,
+        discountType: 'gratis',
+        extraFee: Infinity,
+        roundTo: 250,
+      },
     })
     expect(restored.items[0]).toMatchObject({ price: 0, qty: 1 })
     expect(restored.charges).toEqual(emptyBill().charges)

@@ -9,9 +9,13 @@ export type Item = {
 }
 
 export type Charges = {
+  serviceType: 'amount' | 'pct'
   servicePct: number
+  serviceAmount: number // nominal service di struk, dipakai kalau serviceType 'amount'
+  taxType: 'amount' | 'pct'
   taxPct: number
-  taxAfterService: boolean // pajak dihitung dari subtotal + service
+  taxAmount: number // nominal pajak di struk, dipakai kalau taxType 'amount'
+  taxAfterService: boolean // pajak persen dihitung dari subtotal + service
   discount: number
   discountType: 'amount' | 'pct'
   extraFee: number // ongkir / biaya lain, dibagi rata
@@ -34,7 +38,19 @@ export const emptyBill = (): Bill => ({
   title: '',
   people: [],
   items: [],
-  charges: { servicePct: 5, taxPct: 10, taxAfterService: true, discount: 0, discountType: 'amount', extraFee: 0, roundTo: 1 },
+  charges: {
+    serviceType: 'pct',
+    servicePct: 5,
+    serviceAmount: 0,
+    taxType: 'pct',
+    taxPct: 10,
+    taxAmount: 0,
+    taxAfterService: true,
+    discount: 0,
+    discountType: 'amount',
+    extraFee: 0,
+    roundTo: 1,
+  },
   payerId: null,
   paymentInfo: '',
 })
@@ -44,6 +60,7 @@ type Raw = Record<string, unknown>
 const isRecord = (v: unknown): v is Raw => typeof v === 'object' && v !== null && !Array.isArray(v)
 const text = (v: unknown, fallback = '') => (typeof v === 'string' ? v : fallback)
 const amount = (v: unknown, fallback: number) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : fallback)
+const unit = (v: unknown, fallback: 'amount' | 'pct') => (v === 'amount' || v === 'pct' ? v : fallback)
 
 function restorePerson(v: unknown): Person | null {
   if (!isRecord(v) || typeof v.id !== 'string' || typeof v.name !== 'string') return null
@@ -66,11 +83,15 @@ function restoreCharges(v: unknown): Charges {
   const empty = emptyBill().charges
   const c = isRecord(v) ? v : {}
   return {
+    serviceType: unit(c.serviceType, empty.serviceType),
     servicePct: amount(c.servicePct, empty.servicePct),
+    serviceAmount: amount(c.serviceAmount, empty.serviceAmount),
+    taxType: unit(c.taxType, empty.taxType),
     taxPct: amount(c.taxPct, empty.taxPct),
+    taxAmount: amount(c.taxAmount, empty.taxAmount),
     taxAfterService: typeof c.taxAfterService === 'boolean' ? c.taxAfterService : empty.taxAfterService,
     discount: amount(c.discount, empty.discount),
-    discountType: c.discountType === 'pct' || c.discountType === 'amount' ? c.discountType : empty.discountType,
+    discountType: unit(c.discountType, empty.discountType),
     extraFee: amount(c.extraFee, empty.extraFee),
     roundTo: [1, 100, 500, 1000].includes(c.roundTo as number) ? (c.roundTo as number) : empty.roundTo,
   }

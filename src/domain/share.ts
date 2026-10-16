@@ -6,11 +6,15 @@ import { roundingNote } from './receipt'
 /** "a", "a dan b", "a, b, dan c" */
 const list = (parts: string[]) => (parts.length < 3 ? parts.join(' dan ') : `${parts.slice(0, -1).join(', ')}, dan ${parts.at(-1)}`)
 
+/** "service 5%" atau "service Rp 5.000", false kalau tidak dipakai. */
+const fee = (name: string, type: Charges['serviceType'], pct: number, amount: number) =>
+  type === 'pct' ? pct > 0 && `${name} ${pct}%` : amount > 0 && `${name} ${rupiah(amount)}`
+
 /** Penjelasan biaya tambahan yang dipakai saja, dalam kalimat biasa. */
 function chargesNote(c: Charges, payerName: string | undefined) {
   const added = [
-    c.servicePct > 0 && `service ${c.servicePct}%`,
-    c.taxPct > 0 && `pajak ${c.taxPct}%`,
+    fee('service', c.serviceType, c.servicePct, c.serviceAmount),
+    fee('pajak', c.taxType, c.taxPct, c.taxAmount),
     c.extraFee > 0 && `biaya lain ${rupiah(c.extraFee)}`,
   ].filter((s) => s !== false)
   return [

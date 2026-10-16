@@ -5,8 +5,12 @@ import { calculate, itemsSubtotal } from './calculate'
 const person = (id: string): Person => ({ id, name: id, color: '#000' })
 const item = (id: string, price: number, sharedBy: string[], qty = 1): Item => ({ id, name: id, price, qty, sharedBy })
 const charges = (patch: Partial<Charges> = {}): Charges => ({
+  serviceType: 'pct',
   servicePct: 0,
+  serviceAmount: 0,
+  taxType: 'pct',
   taxPct: 0,
+  taxAmount: 0,
   taxAfterService: true,
   discount: 0,
   discountType: 'amount',
@@ -78,6 +82,45 @@ describe('calculate', () => {
       charges: charges({ discount: 20, discountType: 'pct', taxPct: 10 }),
     })
     expect(totals(b)).toEqual([88000])
+  })
+
+  it('membagi service nominal sesuai porsi pesanan, lalu pajak persen dihitung setelahnya', () => {
+    const b = bill({
+      people: [person('a'), person('b')],
+      items: [item('x', 60000, ['a']), item('y', 40000, ['b'])],
+      // servicePct sisa dari mode persen diabaikan selama service-nya nominal.
+      charges: charges({ serviceType: 'amount', serviceAmount: 10000, servicePct: 5, taxPct: 10 }),
+    })
+    const result = calculate(b)
+    expect(result.perPerson.map((r) => r.service)).toEqual([6000, 4000])
+    expect(result.service).toBe(10000)
+    expect(result.tax).toBe(11000)
+    expect(totals(b)).toEqual([72600, 48400])
+  })
+
+  it('membagi pajak nominal sesuai porsi pesanan, tanpa terpengaruh urutan service', () => {
+    const b = bill({
+      people: [person('a'), person('b')],
+      items: [item('x', 60000, ['a']), item('y', 40000, ['b'])],
+      charges: charges({ servicePct: 10, taxType: 'amount', taxAmount: 12000, taxPct: 11 }),
+    })
+    const after = calculate(b)
+    expect(after.perPerson.map((r) => r.tax)).toEqual([7200, 4800])
+    expect(after.total).toBe(122000)
+    expect(totals(b)).toEqual([73200, 48800])
+
+    const before = calculate({ ...b, charges: { ...b.charges, taxAfterService: false } })
+    expect(before.perPerson.map((r) => r.total)).toEqual([73200, 48800])
+  })
+
+  it('service dan pajak nominal dibagi dari porsi sebelum diskon', () => {
+    const b = bill({
+      people: [person('a'), person('b')],
+      items: [item('x', 75000, ['a']), item('y', 25000, ['b'])],
+      charges: charges({ discount: 20000, serviceType: 'amount', serviceAmount: 8000, taxType: 'amount', taxAmount: 4000 }),
+    })
+    // a: 75.000 − 15.000 + 6.000 + 3.000, b: 25.000 − 5.000 + 2.000 + 1.000
+    expect(totals(b)).toEqual([69000, 23000])
   })
 
   it('membatasi diskon supaya tidak melebihi subtotal', () => {

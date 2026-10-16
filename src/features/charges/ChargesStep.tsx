@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import type { Dispatch, ReactNode } from 'react'
-import type { Bill } from '../../domain/bill'
+import type { Bill, Charges } from '../../domain/bill'
 import type { BillResult } from '../../domain/calculate'
 import { billMood } from '../../domain/mood'
 import { chargeLines } from '../../domain/receipt'
@@ -26,8 +26,64 @@ function Presets({ label, values, current, onPick }: { label: string; values: nu
   )
 }
 
-function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-[1.6rem] bg-surface p-5 ${className}`}>{children}</div>
+function Card({ children }: { children: ReactNode }) {
+  return <div className="rounded-[1.6rem] bg-surface p-5">{children}</div>
+}
+
+/** Kartu service atau pajak: persen dengan pilihan cepat, atau nominal Rp persis seperti di struk. */
+function FeeCard({
+  id,
+  title,
+  label,
+  presets,
+  type,
+  pct,
+  amount,
+  onType,
+  onPct,
+  onAmount,
+}: {
+  id: string
+  title: string
+  label: string
+  presets: number[]
+  type: Charges['serviceType']
+  pct: number
+  amount: number
+  onType: (type: Charges['serviceType']) => void
+  onPct: (pct: number) => void
+  onAmount: (amount: number) => void
+}) {
+  return (
+    <Card>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold">{title}</p>
+        <div className="w-32">
+          <Segmented
+            id={id}
+            label={`Satuan ${label.toLowerCase()}`}
+            value={type}
+            onChange={onType}
+            options={[
+              { value: 'pct', label: '%' },
+              { value: 'amount', label: 'Rp' },
+            ]}
+          />
+        </div>
+      </div>
+      {type === 'pct' ? (
+        <>
+          <PercentInput label={`${label} (%)`} value={pct} onChange={onPct} />
+          <Presets label={label} values={presets} current={pct} onPick={onPct} />
+        </>
+      ) : (
+        <>
+          <MoneyInput label={`${label} (Rp)`} value={amount} onChange={onAmount} />
+          <p className="mt-2 text-xs text-muted">Isi nominal {label.toLowerCase()} di struk, dibagi sesuai porsi pesanan.</p>
+        </>
+      )}
+    </Card>
+  )
 }
 
 export function ChargesStep({ bill, result, dispatch }: { bill: Bill; result: BillResult; dispatch: Dispatch<Action> }) {
@@ -47,37 +103,55 @@ export function ChargesStep({ bill, result, dispatch }: { bill: Bill; result: Bi
         Samain sama yang tertulis di struk ya.
       </SectionTitle>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <p className="mb-2 text-sm font-semibold">Service</p>
-          <PercentInput label="Service (%)" value={c.servicePct} onChange={(servicePct) => patch({ servicePct })} />
-          <Presets label="Service" values={[0, 5, 10]} current={c.servicePct} onPick={(servicePct) => patch({ servicePct })} />
-        </Card>
-        <Card>
-          <p className="mb-2 text-sm font-semibold">Pajak (PB1)</p>
-          <PercentInput label="Pajak (%)" value={c.taxPct} onChange={(taxPct) => patch({ taxPct })} />
-          <Presets label="Pajak" values={[0, 10, 11]} current={c.taxPct} onPick={(taxPct) => patch({ taxPct })} />
-        </Card>
+      <div className="grid gap-3">
+        <FeeCard
+          id="service"
+          title="Service"
+          label="Service"
+          presets={[0, 5, 10]}
+          type={c.serviceType}
+          pct={c.servicePct}
+          amount={c.serviceAmount}
+          onType={(serviceType) => patch({ serviceType })}
+          onPct={(servicePct) => patch({ servicePct })}
+          onAmount={(serviceAmount) => patch({ serviceAmount })}
+        />
+        <FeeCard
+          id="tax"
+          title="Pajak (PB1)"
+          label="Pajak"
+          presets={[0, 10, 11]}
+          type={c.taxType}
+          pct={c.taxPct}
+          amount={c.taxAmount}
+          onType={(taxType) => patch({ taxType })}
+          onPct={(taxPct) => patch({ taxPct })}
+          onAmount={(taxAmount) => patch({ taxAmount })}
+        />
 
-        <Card className="col-span-2">
-          <Toggle
-            checked={c.taxAfterService}
-            onChange={(taxAfterService) => patch({ taxAfterService })}
-            label={
-              <>
-                <b className="font-semibold">Pajak dihitung setelah service</b>
-                <span className="block text-xs text-muted">Umumnya begini di restoran Indonesia</span>
-              </>
-            }
-          />
-        </Card>
+        {/* Pajak nominal sudah final dari struk, jadi urutannya terhadap service tidak berpengaruh. */}
+        {c.taxType === 'pct' && (
+          <Card>
+            <Toggle
+              checked={c.taxAfterService}
+              onChange={(taxAfterService) => patch({ taxAfterService })}
+              label={
+                <>
+                  <b className="font-semibold">Pajak dihitung setelah service</b>
+                  <span className="block text-xs text-muted">Umumnya begini di restoran Indonesia</span>
+                </>
+              }
+            />
+          </Card>
+        )}
 
-        <Card className="col-span-2">
+        <Card>
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="text-sm font-semibold">Diskon / promo</p>
             <div className="w-32">
               <Segmented
                 id="disc"
+                label="Satuan diskon"
                 value={c.discountType}
                 onChange={(discountType) => patch({ discountType, discount: 0 })}
                 options={[
@@ -95,16 +169,17 @@ export function ChargesStep({ bill, result, dispatch }: { bill: Bill; result: Bi
           <p className="mt-2 text-xs text-muted">Dipotong dari subtotal sebelum service & pajak, dibagi sesuai porsi pesanan.</p>
         </Card>
 
-        <Card className="col-span-2">
+        <Card>
           <p className="mb-2 text-sm font-semibold">Ongkir / biaya lain</p>
           <MoneyInput label="Ongkir atau biaya lain" value={c.extraFee} onChange={(extraFee) => patch({ extraFee })} />
           <p className="mt-2 text-xs text-muted">Dibagi rata ke semua orang.</p>
         </Card>
 
-        <Card className="col-span-2">
+        <Card>
           <p className="mb-3 text-sm font-semibold">Pembulatan per orang</p>
           <Segmented
             id="round"
+            label="Pembulatan per orang"
             value={String(c.roundTo)}
             onChange={(v) => patch({ roundTo: Number(v) })}
             options={[
