@@ -2,8 +2,14 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import vercel from './vercel.json' with { type: 'json' }
+
+// Header keamanan produksi ada di vercel.json. `vite preview`, yang dipakai E2E, mengirim header yang sama
+// supaya pelanggaran CSP ketahuan di test, bukan di HP pengguna.
+const securityHeaders = Object.fromEntries(vercel.headers.find((h) => h.source === '/(.*)')!.headers.map((h) => [h.key, h.value]))
 
 export default defineConfig({
+  preview: { headers: securityHeaders },
   build: {
     rolldownOptions: {
       output: {
