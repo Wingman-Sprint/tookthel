@@ -47,6 +47,15 @@ describe('buildReceipt', () => {
     expect(plain.total).toBe(110000)
   })
 
+  it('menulis service dan pajak nominal tanpa persen', () => {
+    const r = receipt(bill({}, { serviceType: 'amount', serviceAmount: 6000, taxType: 'amount', taxAmount: 11500 }))
+    expect(r.charges).toEqual([
+      { label: 'Service', amount: expect.closeTo(6000) },
+      { label: 'Pajak', amount: expect.closeTo(11500) },
+    ])
+    expect(r.total).toBe(127500)
+  })
+
   it('menulis persen diskon kalau diskonnya persen', () => {
     expect(receipt(bill({}, { discount: 10, discountType: 'pct' })).charges[0]).toEqual({ label: 'Diskon 10%', amount: -11000 })
   })

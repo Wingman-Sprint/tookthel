@@ -44,7 +44,7 @@ Tookthel bikin si tumbal tetap balik modal. Masukkan siapa yang ikut dan apa yan
 
 - **Empat langkah, satu layar HP.** Teman, Pesanan, Pajak, dan Hasil. Langkah berikutnya baru terbuka kalau yang sebelumnya sudah lengkap, dan alasannya langsung terlihat.
 - **Menu bisa dibagi.** Harga menu dibagi rata di antara orang yang memesannya. Pesanan tanpa pemesan ditandai sebelum lanjut.
-- **Service, pajak (PB1), diskon, dan biaya lain.** Diskon bisa nominal atau persen, dan pajak bisa dihitung sebelum atau sesudah service.
+- **Service, pajak (PB1), diskon, dan biaya lain.** Service, pajak, dan diskon bisa persen atau nominal Rp persis seperti di struk, dan pajak persen bisa dihitung sebelum atau sesudah service.
 - **Pembulatan per orang** ke Rp 100, 500, atau 1.000 supaya gampang ditransfer. Selisihnya ditanggung si tumbal, jadi totalnya tetap sama dengan struk.
 - **Struk yang dicetak.** Tombol Bagikan membuka printer kecil yang mencetak struk. Gambar struk dan teks rinciannya terkirim sekaligus lewat menu share HP. Di laptop, gambarnya diunduh dan teksnya disalin.
 - **Rekening si tumbal ikut terkirim**, jadi teman bisa langsung transfer tanpa bertanya.
@@ -81,7 +81,7 @@ flowchart LR
 
 - Diskon, service, dan pajak dibagi **proporsional** sesuai porsi pesanan tiap orang.
 - Biaya lain (misalnya ongkir) dibagi **rata** ke semua orang.
-- Pajak bisa dihitung dari porsi saja kalau saklar "Pajak dihitung setelah service" dimatikan.
+- Pajak bisa dihitung dari porsi saja kalau saklar "Pajak dihitung setelah service" dimatikan. Saklar ini hanya untuk pajak persen, karena pajak nominal sudah final dari struk.
 - Tagihan selain si tumbal dibulatkan, dan si tumbal menanggung sisanya. Totalnya selalu sama persis dengan struk.
 
 **Contoh** dari gambar di atas: makan malam berempat, service 5%, pajak 10%, dan Budi yang bayar duluan.

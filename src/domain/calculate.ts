@@ -30,6 +30,7 @@ export type BillResult = {
 /**
  * Urutan hitung (umum di struk restoran Indonesia):
  *   subtotal − diskon → + service → + pajak (opsional dari subtotal + service) → + biaya lain.
+ * Service & pajak bisa persen atau nominal Rp dari struk. Pajak nominal tidak terpengaruh taxAfterService.
  * Diskon, service & pajak dibagi proporsional sesuai pesanan; biaya lain dibagi rata.
  * Tagihan selain pembayar dibulatkan ke kelipatan charges.roundTo terdekat; pembayar menanggung sisanya.
  */
@@ -77,8 +78,11 @@ export function calculate(bill: Bill): BillResult {
     const share = subtotal ? r.subtotal / subtotal : 0
     r.discount = discountTotal * share
     const base = r.subtotal - r.discount
-    r.service = (base * charges.servicePct) / 100
-    r.tax = ((charges.taxAfterService ? base + r.service : base) * charges.taxPct) / 100
+    r.service = charges.serviceType === 'amount' ? charges.serviceAmount * share : (base * charges.servicePct) / 100
+    r.tax =
+      charges.taxType === 'amount'
+        ? charges.taxAmount * share
+        : ((charges.taxAfterService ? base + r.service : base) * charges.taxPct) / 100
     r.extra = extraPer
     const t = base + r.service + r.tax + r.extra
     exact += t

@@ -215,6 +215,40 @@ test('service, diskon, ongkir, dan urutan pajak bisa diatur lewat input berlabel
   expect(shared).toContain('Sudah termasuk service 10%, pajak 10%, dan biaya lain Rp 10.000. Sudah dipotong diskon Rp 20.000.')
 })
 
+test('service dan pajak bisa diisi nominal Rp sesuai struk', async ({ page }) => {
+  await seed(page)
+  await openStep(page, 'Pajak')
+  const unit = (name: string, value: 'Rp' | '%') =>
+    page.getByRole('group', { name: `Satuan ${name}` }).getByRole('button', { name: value, exact: true }).click()
+  const afterService = page.getByRole('switch', { name: /Pajak dihitung setelah service/ })
+
+  // Iga Bakar 100.000 + service Rp 7.000 + pajak 10% dari 107.000
+  await unit('service', 'Rp')
+  await page.getByLabel('Service (Rp)').fill('7000')
+  await expect(page.locator('footer')).toContainText('Rp 117.700')
+
+  // Pajak nominal sudah final dari struk, jadi saklar urutan pajak disembunyikan.
+  await unit('pajak', 'Rp')
+  await expect(afterService).toBeHidden()
+  await page.getByLabel('Pajak (Rp)').fill('11000')
+  await expect(page.locator('footer')).toContainText('Rp 118.000')
+
+  // Kembali ke persen memakai lagi angka persen sebelumnya.
+  await unit('service', '%')
+  await expect(page.getByLabel('Service (%)')).toHaveValue('5')
+  await expect(page.locator('footer')).toContainText('Rp 116.000')
+
+  // Pilihan nominal ikut tersimpan setelah aplikasi dibuka ulang.
+  await page.reload()
+  await openStep(page, 'Pajak')
+  await expect(page.getByLabel('Pajak (Rp)')).toHaveValue('11.000')
+  await expect(afterService).toBeHidden()
+
+  await next(page)
+  const shared = await readShared(page)
+  expect(shared).toContain('Sudah termasuk service 5% dan pajak Rp 11.000.')
+})
+
 test('pembulatan per orang menggeser selisih ke pembayar dan ikut dibagikan', async ({ page }) => {
   await seed(page)
   await openStep(page, 'Pajak')
