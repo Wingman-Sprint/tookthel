@@ -17,6 +17,8 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/plus-jakarta-sans": "^5.3.0",
     "canvas-confetti": "^1.9.4",
     "lucide-react": "^1.49.0",
     "motion": "^13.5.0",
