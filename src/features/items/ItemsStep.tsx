@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { AlertCircle, Plus } from 'lucide-react'
-import { lazy, Suspense, useState, type Dispatch } from 'react'
+import { lazy, Suspense, useCallback, useRef, useState, type Dispatch } from 'react'
 import { toast } from 'sonner'
-import type { Bill, Item } from '../../domain/bill'
+import { hasUnsavedChanges, type Bill, type Item } from '../../domain/bill'
 import { itemsSubtotal, type BillResult } from '../../domain/calculate'
 import { rupiah } from '../../lib/format'
 import { uid } from '../../lib/id'
@@ -18,12 +18,37 @@ const blank = (): Item => ({ id: uid(), name: '', price: 0, qty: 1, sharedBy: []
 export function ItemsStep({ bill, result, dispatch }: { bill: Bill; result: BillResult; dispatch: Dispatch<Action> }) {
   const [draft, setDraft] = useState<Item | null>(null)
   const [open, setOpen] = useState(false)
+  // Isian form terakhir, dan pesanan baru yang belum disimpan saat sheet tertutup. Tombol Tambah pesanan
+  // melanjutkannya, jadi isian tidak hilang walau sheet tertutup tanpa sengaja.
+  const latest = useRef<Item | null>(null)
+  const [unsaved, setUnsaved] = useState<Item | null>(null)
   const people = new Map(bill.people.map((p) => [p.id, p]))
   const subtotal = itemsSubtotal(bill.items)
 
   const edit = (item: Item) => {
     setDraft(item)
+    latest.current = item
     setOpen(true)
+  }
+  const onFormChange = useCallback((item: Item) => void (latest.current = item), [])
+
+  // Dipanggil hanya saat pengguna menutup sheet (geser, tombol tutup, ketuk di luar, Escape), bukan setelah disimpan.
+  const close = (o: boolean) => {
+    setOpen(o)
+    const current = latest.current
+    if (o || !draft || !current) return
+    const saved = bill.items.find((i) => i.id === draft.id)
+    if (!saved) setUnsaved(hasUnsavedChanges(undefined, current) ? current : null)
+    if (!hasUnsavedChanges(saved, current)) return
+    toast(saved ? 'Perubahan belum disimpan' : 'Pesanan belum disimpan', {
+      description: 'Isiannya masih ada.',
+      action: { label: 'Lanjutkan', onClick: () => edit(current) },
+    })
+  }
+
+  const saved = (item: Item) => {
+    dispatch({ type: 'upsertItem', item })
+    if (item.id === unsaved?.id) setUnsaved(null)
   }
 
   const remove = (id: string) => {
@@ -139,14 +164,14 @@ export function ItemsStep({ bill, result, dispatch }: { bill: Bill; result: Bill
         </motion.div>
       )}
 
-      <Button variant="soft" className="mt-4 w-full border-2 border-dashed border-line !bg-transparent" onClick={() => edit(blank())}>
+      <Button variant="soft" className="mt-4 w-full border-2 border-dashed border-line !bg-transparent" onClick={() => edit(unsaved ?? blank())}>
         <Plus size={18} /> Tambah pesanan
       </Button>
 
       <Suspense fallback={null}>
         <Sheet
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={close}
           title={bill.items.some((i) => i.id === draft?.id) ? 'Ubah pesanan' : 'Pesanan baru'}
         >
           {draft && (
@@ -156,14 +181,15 @@ export function ItemsStep({ bill, result, dispatch }: { bill: Bill; result: Bill
               bill={bill}
               isNew={!bill.items.some((i) => i.id === draft.id)}
               onSave={(item) => {
-                dispatch({ type: 'upsertItem', item })
+                saved(item)
                 setOpen(false)
               }}
               onSaveAndAddAnother={(item) => {
-                dispatch({ type: 'upsertItem', item })
-                setDraft(blank())
+                saved(item)
+                edit(blank())
               }}
               onDelete={() => remove(draft.id)}
+              onChange={onFormChange}
             />
           )}
         </Sheet>

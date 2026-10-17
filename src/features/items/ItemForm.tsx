@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { Check, Minus, Plus, Trash2, Users } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import type { Bill, Item } from '../../domain/bill'
 import { rupiah } from '../../lib/format'
@@ -13,6 +13,7 @@ export function ItemForm({
   onSave,
   onSaveAndAddAnother,
   onDelete,
+  onChange,
 }: {
   initial: Item
   bill: Bill
@@ -21,8 +22,11 @@ export function ItemForm({
   /** Simpan lalu langsung kosongkan form untuk menu berikutnya tanpa menutup sheet. */
   onSaveAndAddAnother: (i: Item) => void
   onDelete: () => void
+  /** Isian terakhir, supaya tidak hilang kalau sheet tertutup sebelum disimpan. */
+  onChange: (i: Item) => void
 }) {
   const [item, setItem] = useState(initial)
+  useEffect(() => onChange(item), [item, onChange])
   const set = (patch: Partial<Item>) => setItem((i) => ({ ...i, ...patch }))
   const allSelected = bill.people.length > 0 && bill.people.every((p) => item.sharedBy.includes(p.id))
   const togglePerson = (id: string) =>

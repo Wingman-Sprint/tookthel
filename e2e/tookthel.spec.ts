@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 type NewItem = { name: string; price: number; qty?: number; who: string[] | 'semua' }
 
@@ -64,6 +64,18 @@ async function readShared(page: Page) {
   await sheet.getByRole('button', { name: 'Salin teks' }).click()
   await expect(page.getByText('Rincian disalin')).toBeVisible()
   return page.evaluate(() => navigator.clipboard.readText())
+}
+
+/** Geser dari tengah elemen ke bawah, seperti jempol di HP. Vaul baru menerima geseran setelah animasi buka selesai. */
+async function dragDown(page: Page, target: Locator, distance = 300) {
+  await page.waitForTimeout(600)
+  const box = (await target.boundingBox())!
+  const x = box.x + box.width / 2
+  const y = box.y + box.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  for (let dy = 20; dy <= distance; dy += 20) await page.mouse.move(x, y + dy)
+  await page.mouse.up()
 }
 
 test.beforeEach(async ({ page, context }) => {
@@ -321,6 +333,72 @@ test('simpan & tambah menu lain tanpa menutup sheet', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Roti Bakar/ })).toContainText('Ani')
 })
 
+test.describe('sheet pesanan', () => {
+  test('menggeser isi sheet hanya menggulir, menggeser judulnya menutup sheet', async ({ page }) => {
+    await seed(page)
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Pesanan baru' })
+    await dragDown(page, sheet.getByText('Siapa yang pesan?'))
+    await page.waitForTimeout(600)
+    await expect(sheet).toBeVisible()
+
+    await dragDown(page, sheet.getByRole('heading', { name: 'Pesanan baru' }))
+    await expect(sheet).toBeHidden()
+  })
+
+  test('pesanan baru yang tertutup sebelum disimpan bisa dilanjutkan', async ({ page }) => {
+    await seed(page)
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Pesanan baru' })
+    await sheet.getByLabel('Nama menu').fill('Es Teh')
+    await sheet.getByLabel('Harga satuan').fill('5000')
+    await sheet.getByRole('button', { name: 'Tutup' }).click()
+    await expect(sheet).toBeHidden()
+
+    await page.getByRole('button', { name: 'Lanjutkan' }).click()
+    await expect(sheet.getByLabel('Nama menu')).toHaveValue('Es Teh')
+    await expect(sheet.getByLabel('Harga satuan')).toHaveValue('5.000')
+
+    // Kalau notifikasinya terlewat, tombol Tambah pesanan juga melanjutkan isian yang sama.
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    await expect(sheet.getByLabel('Nama menu')).toHaveValue('Es Teh')
+    await sheet.getByRole('button', { name: 'Semua' }).click()
+    await sheet.getByRole('button', { name: /^Tambahkan/ }).click()
+    await expect(sheet).toBeHidden()
+    await expect(page.getByText('Subtotal (2 menu)')).toBeVisible()
+
+    // Setelah disimpan, pesanan berikutnya mulai dari form kosong.
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    await expect(sheet.getByLabel('Nama menu')).toHaveValue('')
+  })
+
+  test('menutup pesanan baru yang masih kosong tidak memunculkan notifikasi', async ({ page }) => {
+    await seed(page)
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    const sheet = page.getByRole('dialog', { name: 'Pesanan baru' })
+    await sheet.getByRole('button', { name: 'Tutup' }).click()
+    await expect(sheet).toBeHidden()
+    await expect(page.getByText('Pesanan belum disimpan')).toHaveCount(0)
+  })
+
+  test('mengubah pesanan lalu menutup sheet tidak menyimpan perubahan, tapi bisa dilanjutkan', async ({ page }) => {
+    await seed(page)
+    const item = page.getByRole('button', { name: /Iga Bakar/ })
+    await item.click()
+    const sheet = page.getByRole('dialog', { name: 'Ubah pesanan' })
+    await sheet.getByLabel('Nama menu').fill('Iga Bakar Madu')
+    await page.keyboard.press('Escape')
+    await expect(sheet).toBeHidden()
+    await expect(item).not.toContainText('Madu')
+
+    await expect(page.getByText('Perubahan belum disimpan')).toBeVisible()
+    await page.getByRole('button', { name: 'Lanjutkan' }).click()
+    await expect(sheet.getByLabel('Nama menu')).toHaveValue('Iga Bakar Madu')
+  })
+})
+
 test.describe('keyboard HP', () => {
   type KeyboardWindow = { keyboard: (height: number, offsetTop: number) => void }
 
@@ -365,15 +443,7 @@ test.describe('keyboard HP', () => {
     const sheet = page.getByRole('dialog')
     await expect(sheet.getByLabel('Nama menu')).toBeFocused()
     await page.evaluate(() => (window as unknown as KeyboardWindow).keyboard(336, 0))
-    // Vaul baru menerima geseran setelah animasi buka selesai.
-    await page.waitForTimeout(600)
-
-    const start = (await sheet.getByText('Siapa yang pesan?').boundingBox())!
-    await page.mouse.move(start.x + 20, start.y + 5)
-    await page.mouse.down()
-    for (let dy = 20; dy <= 300; dy += 20) await page.mouse.move(start.x + 20, start.y + 5 + dy)
-    await page.mouse.up()
-
+    await dragDown(page, sheet.getByText('Siapa yang pesan?'))
     await page.waitForTimeout(600)
     await expect(sheet).toBeVisible()
   })

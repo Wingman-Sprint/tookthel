@@ -116,3 +116,18 @@ export function restoreBill(saved: unknown): Bill {
     paymentInfo: text(saved.paymentInfo),
   }
 }
+
+/**
+ * Isian form pesanan berbeda dari yang tersimpan, jadi akan hilang kalau sheet ditutup begitu saja.
+ * Untuk pesanan baru (`saved` kosong), cukup ada satu isian yang sudah diubah dari form kosong.
+ */
+export function hasUnsavedChanges(saved: Item | undefined, current: Item): boolean {
+  if (!saved) return current.name.trim() !== '' || current.price > 0 || current.qty > 1 || current.sharedBy.length > 0
+  return (
+    saved.name !== current.name.trim() ||
+    saved.price !== current.price ||
+    saved.qty !== current.qty ||
+    saved.sharedBy.length !== current.sharedBy.length ||
+    saved.sharedBy.some((id) => !current.sharedBy.includes(id))
+  )
+}
