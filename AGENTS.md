@@ -136,6 +136,7 @@ Karakter tampilan Tookthel dipertahankan: kartu bento warna-warni, ilustrasi ber
 - Yang boleh langsung dikerjakan: memoles detail seperti kontras, jarak, teks yang terpotong, dan konsistensi gerak.
 - Mengganti elemen identitas (warna, logo, ilustrasi, font, gaya kartu) harus ditanyakan ke pasangan dulu, dengan screenshot sebelum dan sesudah.
 - Cek tampilan di lebar 320 px dan 390 px, mode terang dan gelap.
+- Bottom sheet (`src/ui/Sheet.tsx`): isinya hanya menggulir dan tidak pernah menutup sheet. Menutup lewat geseran pegangan atau judul, tombol ✕, ketukan di luar sheet, atau Escape. Saat keyboard HP terbuka, sheet menempel di atas keyboard. Isian form yang belum disimpan tidak boleh hilang karena sheet tertutup (lihat `hasUnsavedChanges` di `domain/bill.ts`).
 - Ilustrasi ada di `src/ui/Illustrations.tsx`. Ekspresi wajah struk dipilih oleh `billMood` di `src/domain/mood.ts`.
 - Logo ada di `src/ui/Logo.tsx` (konstanta `LOGO`) dan dipakai di header serta kepala struk. Bentuk yang sama juga ada di `public/logo.svg` (sumber favicon dan ikon PWA, `npm run icons`) dan di splash `index.html`. Kalau logonya berubah, ubah ketiganya. `src/ui/Logo.test.ts` gagal kalau ada yang tertinggal.
 
