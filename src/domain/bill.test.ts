@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { emptyBill, payerOf, restoreBill, type Bill } from './bill'
+import { emptyBill, hasUnsavedChanges, payerOf, restoreBill, type Bill, type Item } from './bill'
 
 describe('payerOf', () => {
   const people = [
@@ -98,5 +98,36 @@ describe('restoreBill', () => {
     expect(restored.items[0].sharedBy).toEqual(['a'])
     expect(restored.payerId).toBe('a')
     expect(restoreBill({ ...bill, people: [], payerId: 'a' }).payerId).toBeNull()
+  })
+})
+
+describe('hasUnsavedChanges', () => {
+  const blank: Item = { id: 'x', name: '', price: 0, qty: 1, sharedBy: [] }
+  const saved: Item = { id: 'x', name: 'Iga Bakar', price: 98000, qty: 1, sharedBy: ['a', 'b'] }
+
+  it('pesanan baru yang belum diisi apa-apa boleh ditutup tanpa ditanya', () => {
+    expect(hasUnsavedChanges(undefined, blank)).toBe(false)
+    expect(hasUnsavedChanges(undefined, { ...blank, name: '   ' })).toBe(false)
+  })
+
+  it('pesanan baru dengan satu isian saja sudah dianggap belum disimpan', () => {
+    expect(hasUnsavedChanges(undefined, { ...blank, name: 'Kopi' })).toBe(true)
+    expect(hasUnsavedChanges(undefined, { ...blank, price: 5000 })).toBe(true)
+    expect(hasUnsavedChanges(undefined, { ...blank, qty: 2 })).toBe(true)
+    expect(hasUnsavedChanges(undefined, { ...blank, sharedBy: ['a'] })).toBe(true)
+  })
+
+  it('pesanan tersimpan yang dibuka tanpa diubah tidak dianggap berubah', () => {
+    expect(hasUnsavedChanges(saved, { ...saved })).toBe(false)
+    // Urutan pemesan dan spasi di ujung nama tidak dianggap perubahan.
+    expect(hasUnsavedChanges(saved, { ...saved, name: 'Iga Bakar ', sharedBy: ['b', 'a'] })).toBe(false)
+  })
+
+  it('perubahan nama, harga, jumlah, atau pemesan terdeteksi', () => {
+    expect(hasUnsavedChanges(saved, { ...saved, name: 'Iga Bakar Madu' })).toBe(true)
+    expect(hasUnsavedChanges(saved, { ...saved, price: 90000 })).toBe(true)
+    expect(hasUnsavedChanges(saved, { ...saved, qty: 2 })).toBe(true)
+    expect(hasUnsavedChanges(saved, { ...saved, sharedBy: ['a'] })).toBe(true)
+    expect(hasUnsavedChanges(saved, { ...saved, sharedBy: ['a', 'c'] })).toBe(true)
   })
 })
