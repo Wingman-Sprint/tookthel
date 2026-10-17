@@ -321,6 +321,64 @@ test('simpan & tambah menu lain tanpa menutup sheet', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Roti Bakar/ })).toContainText('Ani')
 })
 
+test.describe('keyboard HP', () => {
+  type KeyboardWindow = { keyboard: (height: number, offsetTop: number) => void }
+
+  test.beforeEach(async ({ page }) => {
+    // Browser tes tidak punya keyboard virtual, jadi visualViewport ditiru seperti iPhone Safari: keyboard
+    // hanya mengecilkan area yang terlihat, dan Safari bisa menggeser tampilan ke atas.
+    await page.addInitScript(() => {
+      const vv = Object.assign(new EventTarget(), { width: innerWidth, height: innerHeight, offsetLeft: 0, offsetTop: 0, pageLeft: 0, pageTop: 0, scale: 1 })
+      Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true })
+      ;(window as unknown as KeyboardWindow).keyboard = (height, offsetTop) => {
+        Object.assign(vv, { height: innerHeight - height, offsetTop })
+        vv.dispatchEvent(new Event('resize'))
+      }
+    })
+  })
+
+  test('sheet pesanan naik ke atas keyboard, dan isian yang diketik tetap terlihat', async ({ page }) => {
+    await seed(page)
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    const sheet = page.getByRole('dialog')
+    const name = sheet.getByLabel('Nama menu')
+    await expect(name).toBeFocused()
+    // Keyboard 336 px, dan Safari menggeser tampilan 120 px seperti di video laporan pengguna.
+    await page.evaluate(() => (window as unknown as KeyboardWindow).keyboard(336, 120))
+    await name.fill('Nasi Goreng')
+
+    const visible = await page.evaluate(() => ({ top: 120, bottom: 120 + innerHeight - 336 }))
+    await expect(async () => {
+      const box = (await sheet.boundingBox())!
+      expect(box.y).toBeGreaterThanOrEqual(visible.top)
+      expect(box.y + box.height).toBeLessThanOrEqual(visible.bottom + 1)
+      const field = (await name.boundingBox())!
+      expect(field.y).toBeGreaterThanOrEqual(visible.top)
+      expect(field.y + field.height).toBeLessThanOrEqual(visible.bottom)
+    }).toPass()
+    await expect(name).toHaveValue('Nasi Goreng')
+  })
+
+  test('menggeser isi sheet saat keyboard terbuka tidak menutup sheet', async ({ page }) => {
+    await seed(page)
+    await page.getByRole('button', { name: 'Tambah pesanan' }).click()
+    const sheet = page.getByRole('dialog')
+    await expect(sheet.getByLabel('Nama menu')).toBeFocused()
+    await page.evaluate(() => (window as unknown as KeyboardWindow).keyboard(336, 0))
+    // Vaul baru menerima geseran setelah animasi buka selesai.
+    await page.waitForTimeout(600)
+
+    const start = (await sheet.getByText('Siapa yang pesan?').boundingBox())!
+    await page.mouse.move(start.x + 20, start.y + 5)
+    await page.mouse.down()
+    for (let dy = 20; dy <= 300; dy += 20) await page.mouse.move(start.x + 20, start.y + 5 + dy)
+    await page.mouse.up()
+
+    await page.waitForTimeout(600)
+    await expect(sheet).toBeVisible()
+  })
+})
+
 test('isian di sheet pesanan punya label yang tetap terlihat setelah diisi', async ({ page }) => {
   await seed(page)
   await page.getByRole('button', { name: 'Tambah pesanan' }).click()
