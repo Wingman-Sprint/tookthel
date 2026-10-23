@@ -398,7 +398,7 @@
     "output": ".archify/arsitektur.html",
     "quality_profile": "showcase",
     "repository": {
-      "url": "https://github.com/bintangfabian/tookthel.git",
+      "url": "https://github.com/Wingman-Sprint/tookthel.git",
       "provider": "github",
       "link_mode": "web",
       "revision": "13664da04d531c4c33e6d39beb76539da0758ff7"
