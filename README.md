@@ -14,7 +14,7 @@ Langsung jalan di browser HP, tanpa akun, dan tetap bisa dipakai tanpa internet.
 ### [Coba di tookthel.vercel.app](https://tookthel.vercel.app)
 
 [![Live](https://img.shields.io/badge/v1.0-live-D4F35B?style=flat-square&labelColor=141414)](https://tookthel.vercel.app)
-[![CI](https://img.shields.io/github/actions/workflow/status/bintangfabian/tookthel/ci.yml?branch=main&style=flat-square&label=CI&labelColor=141414)](https://github.com/bintangfabian/tookthel/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Wingman-Sprint/tookthel/ci.yml?branch=main&style=flat-square&label=CI&labelColor=141414)](https://github.com/Wingman-Sprint/tookthel/actions/workflows/ci.yml)
 [![PWA](https://img.shields.io/badge/PWA-bisa_offline-C3B1E1?style=flat-square&labelColor=141414)](#fitur)
 [![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square&logo=react&logoColor=61dafb&labelColor=141414)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-7-3178c6?style=flat-square&logo=typescript&logoColor=white&labelColor=141414)](https://www.typescriptlang.org)
@@ -100,14 +100,14 @@ Tagihan Ani, Rina, dan Dimas dibulatkan ke rupiah terdekat, sedangkan Budi menan
 
 <sub>KODE → DIAGRAM · Peta sistem yang menaut ke baris kodenya</sub>
 
-<a href="https://bintangfabian.github.io/tookthel/arsitektur.html">
+<a href="https://wingman-sprint.github.io/tookthel/arsitektur.html">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/gambar/arsitektur-gelap.webp" />
   <img src="docs/gambar/arsitektur-terang.webp" alt="Arsitektur Tookthel: si tumbal mengisi tagihan di aplikasi, domain menghitung, kanvas menggambar struk, lalu menu share HP mengirimnya ke grup. Tagihan disimpan di localStorage, dan service worker menyajikan aplikasi dari Vercel saat offline" />
 </picture>
 </a>
 
-**[Buka diagram interaktif ↗](https://bintangfabian.github.io/tookthel/arsitektur.html)** · [telusuri jalur sampai grup ↗](https://bintangfabian.github.io/tookthel/arsitektur.html#route=pengguna~teman) · [sumber JSON](docs/arsitektur.archify.json)
+**[Buka diagram interaktif ↗](https://wingman-sprint.github.io/tookthel/arsitektur.html)** · [telusuri jalur sampai grup ↗](https://wingman-sprint.github.io/tookthel/arsitektur.html#route=pengguna~teman) · [sumber JSON](docs/arsitektur.archify.json)
 
 - **Tanpa server.** Seluruh aplikasi jalan di browser. Vercel hanya menyajikan berkas statis hasil build.
 - **Hitungan murni di `domain`.** Komponen hanya menampilkan data dan mengirim aksi. `domain` tidak mengenal React, jadi setiap aturan hitung bisa dites dengan unit test biasa.
@@ -132,7 +132,7 @@ Aturan import antar-layer ada di [`AGENTS.md`](AGENTS.md#6-arsitektur):
 Butuh Node.js 22 atau lebih baru.
 
 ```sh
-git clone https://github.com/bintangfabian/tookthel.git
+git clone https://github.com/Wingman-Sprint/tookthel.git
 cd tookthel
 npm install        # sekalian mengaktifkan hook git
 npm run dev        # http://localhost:5173
@@ -191,14 +191,14 @@ Perilaku baru wajib disertai test: logika di unit test, alur pengguna di E2E. Ta
 - **Header keamanan.** CSP hanya mengizinkan sumber dari Tookthel sendiri. Halaman tidak bisa dibingkai situs lain, jenis berkas tidak ditebak browser, dan kamera, mikrofon, serta lokasi dimatikan. Header yang sama dipakai E2E, jadi pelanggaran CSP gagal di CI sebelum sampai ke pengguna.
 - **Data tersimpan divalidasi.** Isi localStorage yang rusak atau diubah tangan dibersihkan oleh `restoreBill()`, jadi aplikasi tidak blank karena satu nilai aneh.
 - **Tanpa rahasia di repo.** Aplikasi tidak butuh kunci API apa pun, dan `.env` diabaikan git.
-- **Melaporkan celah keamanan.** Pakai [private vulnerability reporting](https://github.com/bintangfabian/tookthel/security/advisories/new), bukan issue publik.
+- **Melaporkan celah keamanan.** Pakai [private vulnerability reporting](https://github.com/Wingman-Sprint/tookthel/security/advisories/new), bukan issue publik.
 
 ## Deploy
 
 | Bagian | Di mana | Catatan |
 | --- | --- | --- |
 | Aplikasi | [Vercel](https://tookthel.vercel.app) | Terdeteksi sebagai proyek Vite (build `npm run build`, output `dist`). [`vercel.json`](vercel.json) mengatur rewrite SPA, `sw.js` tanpa cache, dan header keamanan. |
-| Diagram arsitektur | GitHub Pages | Folder `docs/` di branch `main`, alamatnya [bintangfabian.github.io/tookthel/arsitektur.html](https://bintangfabian.github.io/tookthel/arsitektur.html). |
+| Diagram arsitektur | GitHub Pages | Folder `docs/` di branch `main`, alamatnya [wingman-sprint.github.io/tookthel/arsitektur.html](https://wingman-sprint.github.io/tookthel/arsitektur.html). |
 
 Kalau logo berubah, ubah `public/logo.svg` dan `src/ui/Logo.tsx` bersamaan, lalu jalankan `npm run icons`. Cara membuat ulang gambar promo dan diagram ada di [`AGENTS.md`](AGENTS.md#7-desain).
 
@@ -207,9 +207,9 @@ Kalau logo berubah, ubah `public/logo.svg` dan `src/ui/Logo.tsx` bersamaan, lalu
 | Dokumen | Isi |
 | --- | --- |
 | [`AGENTS.md`](AGENTS.md) | Aturan kerja: tanpa atribusi AI, co-author, format commit dan PR, arsitektur, desain, keamanan |
-| [Diagram arsitektur](https://bintangfabian.github.io/tookthel/arsitektur.html) | Peta sistem interaktif yang menaut ke baris kode, sumbernya [`docs/arsitektur.archify.json`](docs/arsitektur.archify.json) |
+| [Diagram arsitektur](https://wingman-sprint.github.io/tookthel/arsitektur.html) | Peta sistem interaktif yang menaut ke baris kode, sumbernya [`docs/arsitektur.archify.json`](docs/arsitektur.archify.json) |
 | [`calculate.test.ts`](src/domain/calculate.test.ts) | Semua aturan hitung dalam bentuk contoh |
-| [Roadmap #8](https://github.com/bintangfabian/tookthel/issues/8) | Fitur berikutnya dan catatan serah terima antar sesi |
+| [Roadmap #8](https://github.com/Wingman-Sprint/tookthel/issues/8) | Fitur berikutnya dan catatan serah terima antar sesi |
 
 ## Berkontribusi
 
