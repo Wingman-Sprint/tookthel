@@ -1,4 +1,4 @@
-export const DONATION_URL = 'https://sociabuzz.com/byhund/tribe'
+export const DONATION_URL = 'https://sociabuzz.com/wingmanclutch/tribe'
 
 /** Ajakan baru muncul setelah pengguna merasakan manfaatnya beberapa kali. */
 export const ASK_AFTER_BILLS = 3
