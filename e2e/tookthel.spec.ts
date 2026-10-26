@@ -583,7 +583,7 @@ test.describe('ajakan donasi', () => {
     await seedDonation(page, 2)
     await shareAndClose(page)
     await expect(askDonation(page)).toBeVisible()
-    await expect(askDonation(page).getByRole('link', { name: /Dukung di Sociabuzz/ })).toHaveAttribute('href', 'https://sociabuzz.com/byhund/tribe')
+    await expect(askDonation(page).getByRole('link', { name: /Dukung di Sociabuzz/ })).toHaveAttribute('href', 'https://sociabuzz.com/wingmanclutch/tribe')
 
     await askDonation(page).getByRole('button', { name: 'Nanti aja' }).click()
     await expect(askDonation(page)).toBeHidden()
@@ -599,7 +599,7 @@ test.describe('ajakan donasi', () => {
 
     const tab = context.waitForEvent('page')
     await askDonation(page).getByRole('link', { name: /Dukung di Sociabuzz/ }).click()
-    expect((await tab).url()).toBe('https://sociabuzz.com/byhund/tribe')
+    expect((await tab).url()).toBe('https://sociabuzz.com/wingmanclutch/tribe')
     await expect(askDonation(page)).toBeHidden()
 
     // Jeda 30 hari pun sudah lewat, tetap tidak ditanya lagi.
@@ -616,7 +616,7 @@ test.describe('ajakan donasi', () => {
 
   test('link "Traktir kopi" selalu ada di bawah langkah Hasil', async ({ page }) => {
     await seedDonation(page, 0)
-    await expect(page.locator('main').getByRole('link', { name: /Traktir kopi/ })).toHaveAttribute('href', 'https://sociabuzz.com/byhund/tribe')
+    await expect(page.locator('main').getByRole('link', { name: /Traktir kopi/ })).toHaveAttribute('href', 'https://sociabuzz.com/wingmanclutch/tribe')
   })
 })
 
